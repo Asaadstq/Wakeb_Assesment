@@ -6,18 +6,18 @@ using System.Collections;
 public class CutsceneFader : MonoBehaviour
 {
     [Header("Cutscene Frames")]
-    public Image[] cutsceneImages;      // Assign in Inspector (order = display order)
+    public Image[] cutsceneImages;      
 
     [Header("Timings")]
-    public float fadeDuration = 1f;     // Fade in/out time
-    public float displayDuration = 2f;  // Time fully visible
+    public float fadeDuration = 1f;     
+    public float displayDuration = 2f;  
 
     [Header("Next Scene")]
-    public string nextSceneName = "FireScene"; // Must be in Build Settings
+    public string nextSceneName = "FireScene"; 
 
     void Awake()
     {
-        // Prevent initial flash
+        
         if (cutsceneImages != null)
             foreach (var img in cutsceneImages)
                 if (img) { var c = img.color; c.a = 0f; img.color = c; img.gameObject.SetActive(false); }
@@ -34,19 +34,19 @@ public class CutsceneFader : MonoBehaviour
         {
             if (!img) continue;
 
-            // Enable & fade in
+            
             img.gameObject.SetActive(true);
             yield return StartCoroutine(FadeImage(img, 0f, 1f, fadeDuration));
 
-            // Hold
+            
             yield return new WaitForSeconds(displayDuration);
 
-            // Fade out & hide
+            
             yield return StartCoroutine(FadeImage(img, 1f, 0f, fadeDuration));
             img.gameObject.SetActive(false);
         }
 
-        // Load next scene directly
+        
         if (!string.IsNullOrEmpty(nextSceneName))
             SceneManager.LoadScene(nextSceneName);
     }
