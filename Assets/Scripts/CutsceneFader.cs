@@ -5,12 +5,25 @@ using System.Collections;
 
 public class CutsceneFader : MonoBehaviour
 {
-    public Image[] cutsceneImages;     // assign your images in the Inspector
-    public float fadeDuration = 1f;    // fade in/out time
-    public float displayDuration = 2f; // how long to keep image fully visible
-    public string nextSceneName;       // the scene to load after cutscene
+    [Header("Cutscene Frames")]
+    public Image[] cutsceneImages;      // Assign in Inspector (order = display order)
 
-    private void Start()
+    [Header("Timings")]
+    public float fadeDuration = 1f;     // Fade in/out time
+    public float displayDuration = 2f;  // Time fully visible
+
+    [Header("Next Scene")]
+    public string nextSceneName = "FireScene"; // Must be in Build Settings
+
+    void Awake()
+    {
+        // Prevent initial flash
+        if (cutsceneImages != null)
+            foreach (var img in cutsceneImages)
+                if (img) { var c = img.color; c.a = 0f; img.color = c; img.gameObject.SetActive(false); }
+    }
+
+    void Start()
     {
         StartCoroutine(PlayCutscene());
     }
@@ -19,42 +32,36 @@ public class CutsceneFader : MonoBehaviour
     {
         foreach (Image img in cutsceneImages)
         {
-            // Reset transparency
-            img.gameObject.SetActive(true);
-            Color c = img.color;
-            c.a = 0;
-            img.color = c;
+            if (!img) continue;
 
-            // Fade In
-            float t = 0;
-            while (t < fadeDuration)
-            {
-                t += Time.deltaTime;
-                c.a = Mathf.Lerp(0, 1, t / fadeDuration);
-                img.color = c;
-                yield return null;
-            }
+            // Enable & fade in
+            img.gameObject.SetActive(true);
+            yield return StartCoroutine(FadeImage(img, 0f, 1f, fadeDuration));
 
             // Hold
             yield return new WaitForSeconds(displayDuration);
 
-            // Fade Out
-            t = 0;
-            while (t < fadeDuration)
-            {
-                t += Time.deltaTime;
-                c.a = Mathf.Lerp(1, 0, t / fadeDuration);
-                img.color = c;
-                yield return null;
-            }
-
+            // Fade out & hide
+            yield return StartCoroutine(FadeImage(img, 1f, 0f, fadeDuration));
             img.gameObject.SetActive(false);
         }
 
-        // Load next scene
+        // Load next scene directly
         if (!string.IsNullOrEmpty(nextSceneName))
-        {
             SceneManager.LoadScene(nextSceneName);
+    }
+
+    IEnumerator FadeImage(Image img, float from, float to, float dur)
+    {
+        float t = 0f;
+        var c = img.color;
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            c.a = Mathf.Lerp(from, to, t / dur);
+            img.color = c;
+            yield return null;
         }
+        c.a = to; img.color = c;
     }
 }

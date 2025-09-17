@@ -10,6 +10,10 @@ public class FireGroupExtinguish : MonoBehaviour
     public float extinguishPerHit = 5f;   // emission units per hit
     public float smooth = 10f;            // how fast to lerp to target
 
+    [Header("Audio")]
+    public AudioSource fireAudio;         // fire crackling audio source
+    public float maxVolume = 1f;          // volume when fire is at full strength
+
     // per-system state
     Dictionary<ParticleSystem, float> baseRate = new();
     Dictionary<ParticleSystem, float> targetRate = new();
@@ -26,6 +30,12 @@ public class FireGroupExtinguish : MonoBehaviour
             baseRate[ps] = start;
             targetRate[ps] = start;
         }
+
+        if (fireAudio != null)
+        {
+            fireAudio.volume = maxVolume;
+            if (!fireAudio.isPlaying) fireAudio.Play();
+        }
     }
 
     // Called by the water when it collides with any collider on this fire object
@@ -39,6 +49,9 @@ public class FireGroupExtinguish : MonoBehaviour
 
     void Update()
     {
+        float totalRate = 0f;
+        float totalBase = 0f;
+
         foreach (var ps in flameSystems)
         {
             var em = ps.emission;
@@ -52,6 +65,17 @@ public class FireGroupExtinguish : MonoBehaviour
 
             if (next <= 0.01f && ps.isEmitting)
                 ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+
+            totalRate += next;
+            totalBase += baseRate[ps];
+        }
+
+        // 🔊 Adjust fire audio volume based on intensity
+        if (fireAudio != null && totalBase > 0f)
+        {
+            float intensity = totalRate / totalBase; // 1 = full fire, 0 = extinguished
+            float targetVolume = Mathf.Lerp(0f, maxVolume, intensity);
+            fireAudio.volume = Mathf.MoveTowards(fireAudio.volume, targetVolume, Time.deltaTime); // smooth fade
         }
     }
 
@@ -68,6 +92,12 @@ public class FireGroupExtinguish : MonoBehaviour
             em.rateOverTime = c;
 
             if (!ps.isPlaying) ps.Play();
+        }
+
+        if (fireAudio != null)
+        {
+            fireAudio.volume = maxVolume;
+            if (!fireAudio.isPlaying) fireAudio.Play();
         }
     }
 }
